@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trình phát Video</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.0/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            margin-top: 50px;
+        }
+
+        .video-container,
+        .image-list {
+            height: 500px;
+        }
+
+        .video-container {
+            max-width: 800px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .video-wrapper {
+            flex: 1;
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            background: black;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+        }
+
+        .image-list {
+            max-width: 320px;
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            margin-right: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .image-list h4 {
+            position: sticky;
+            top: 0;
+            background: white;
+            padding: 10px 0;
+            z-index: 10;
+            text-align: center;
+        }
+
+        .image-scroll {
+            flex: 1;
+            overflow-y: auto;
+            max-height: calc(500px - 50px);
+        }
+
+        .image-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.3s ease;
+        }
+
+        .image-item:hover {
+            background: #f1f1f1;
+        }
+
+        .image-item img {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            object-fit: cover;
+            margin-right: 15px;
+        }
+
+        .low-fake {
+            color: green;
+            font-weight: bold;
+        }
+
+        .warning-fake {
+            color: rgb(255, 153, 0);
+            font-weight: bold;
+        }
+
+        .high-fake {
+            color: red;
+            font-weight: bold;
+        }
+
+        /* Overlay and enlarged image styles */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .overlay.active {
+            display: flex;
+        }
+
+        .enlarged-image {
+            max-width: 80%;
+            max-height: 80%;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Ensure overlay closes when clicked outside the image */
+        .overlay.active:not(:has(img:hover)) {
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="image-list">
+            <h4>Danh sách khuôn mặt</h4>
+            <div class="image-scroll">
+                {% set threshold_low = threshold_fake[0] * 100 if threshold_fake is defined else 60 %}
+                {% set threshold_high = threshold_fake[1] * 100 if threshold_fake is defined else 90 %}
+                {% for i in range(imgs_path|length) %}
+                {% if props_data[i] < threshold_low %} {% set color_class="low-fake" %} {% set text="REAL" %} {% elif
+                    props_data[i] <=threshold_high %} {% set color_class="warning-fake" %} {% set text="CẢNH BÁO" %} {%
+                    else %} {% set color_class="high-fake" %} {% set text="FAKE" %} {% endif %} <div class="image-item"
+                    onclick="showEnlargedImage('{{ url_for('static', filename=imgs_path[i]) }}')">
+                    <img src="{{ url_for('static', filename=imgs_path[i]) }}" alt="Face Image">
+                    <span class="{{ color_class }}">{{ props_data[i] }}% {{ text }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="video-container">
+        <h3 class="mb-4">🎬 Trình phát Video 🎥</h3>
+        <div class="video-wrapper">
+            <video controls>
+                <source src="{{ url_for('static', filename=video_path) }}" type="video/mp4">
+                Trình duyệt của bạn không hỗ trợ video.
+            </video>
+        </div>
+    </div>
+    </div>
+
+    <!-- Overlay for enlarged image -->
+    <div class="overlay" id="overlay" onclick="closeEnlargedImage()">
+        <img class="enlarged-image" id="enlargedImage" src="" alt="Enlarged Face Image">
+    </div>
+
+    <script>
+        function showEnlargedImage(src) {
+            const overlay = document.getElementById('overlay');
+            const enlargedImage = document.getElementById('enlargedImage');
+            enlargedImage.src = src;
+            overlay.classList.add('active');
+        }
+
+        function closeEnlargedImage() {
+            const overlay = document.getElementById('overlay');
+            overlay.classList.remove('active');
+        }
+
+        // Prevent closing when clicking on the image itself
+        document.getElementById('enlargedImage').addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    </script>
+</body>
+
+</html>

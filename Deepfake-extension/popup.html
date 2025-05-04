@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Youtube video downloader</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.9/iframeResizer.min.js"></script>
+    <style>
+      .container {
+        width: 300px;
+        height: 200px;
+        background-color: #f0f0f0;
+        position: relative;
+        margin: 50px; 
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container style-scope ytd-download-button-renderer">
+      This is a container.
+    </div>
+    <script> iFrameResize({ log: false }, '#widgetPlusApi') </script>
+    <script src="script.js"></script>
+  </body>
+</html>

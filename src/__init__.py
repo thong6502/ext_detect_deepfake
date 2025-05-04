@@ -1,0 +1,1 @@
+#Lưu ý: Để sử dụng import tương đối, thư mục src cần có file __init__.py (có thể là file trống) để đánh dấu đây là một package.
