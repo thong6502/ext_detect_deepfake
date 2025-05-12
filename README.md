@@ -10,7 +10,7 @@ Hệ thống nhận diện video deepfake tích hợp với tiện ích mở r�
 
 <p align="center">
   <img src="demo.gif" width=600><br/>
-  <i>Camera app demo</i>
+  <i>Demo extension </i>
 </p>
 
 ## Tổng quan
