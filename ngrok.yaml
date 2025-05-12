@@ -1,0 +1,7 @@
+version: "2"
+authtoken: 2BguH1AmmXVZS3ZSGlP5ODgQ0H8_7MCGm1tJiKxAWNF5xSmPh
+tunnels:
+  myapp:
+    proto: http
+    addr: http://localhost:5000
+    url: firefly-genuine-adequately.ngrok-free.app

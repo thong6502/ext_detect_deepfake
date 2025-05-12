@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "DeepGuard AI",
+  "version": "1.5.5",
+  "description": "The extension can check video deepfake into Youtube.",
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["script.js"],
+      "run_at": "document_end"
+    }
+  ]
+}

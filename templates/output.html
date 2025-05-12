@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phân Tích Video Deepfake</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22><path fill=%22%234F46E5%22 d=%22M466.5 83.7l-192-80a48.15 48.15 0 0 0-36.9 0l-192 80C27.7 91.1 16 108.6 16 128c0 198.5 114.5 335.7 221.5 380.3 11.8 4.9 25.1 4.9 36.9 0C360.1 472.6 496 349.3 496 128c0-19.4-11.7-36.9-29.5-44.3zM256.1 446.3l-.1-381 175.9 73.3c-3.3 151.4-82.1 261.1-175.8 307.7z%22></path></svg>"
+        type="image/svg+xml">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#6B7280',
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        darkblue: '#1E40AF',
+                        realState: '#16A34A',
+                        warnState: '#FBBF24',
+                        fakeState: '#DC2626',
+                        bgLight: '#F0F9FF',
+                        bgDark: '#E0F2FE'
+                    },
+                    animation: {
+                        'bounce-slow': 'bounce 3s linear infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'spin-slow': 'spin 8s linear infinite',
+                        'float': 'float 5s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    },
+                    boxShadow: {
+                        'status': '0 0 0 3px rgba(var(--status-color), 0.4)',
+                        'card': '0 8px 30px rgba(0, 0, 0, 0.12)',
+                        'hover': '0 20px 60px rgba(0, 0, 0, 0.15)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        }
+
+        .glass-effect-dark {
+            background: rgba(31, 41, 55, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 3px;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .image-item {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 4px solid transparent;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .image-item:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.15);
+        }
+
+        .image-item.real-item {
+            border-left-color: #16A34A;
+        }
+
+        .image-item.warning-item {
+            border-left-color: #FBBF24;
+        }
+
+        .image-item.fake-item {
+            border-left-color: #DC2626;
+        }
+
+        .enlarged-image {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .overlay.active {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .video-container {
+            box-shadow: 0 15px 30px -12px rgba(0, 0, 0, 0.15);
+            transition: all 0.4s ease;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        /* .video-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.25);
+        } */
+
+        .pulse-dot {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .progress-bar {
+            transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .main-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-container {
+            flex: 1;
+            overflow: hidden;
+            padding-bottom: 2rem;
+        }
+
+        .status-badge {
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .status-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-badge.real {
+            background-color: rgba(22, 163, 74, 0.15);
+            color: #166534;
+        }
+
+        .status-badge.warning {
+            background-color: rgba(251, 191, 36, 0.15);
+            color: #92400E;
+        }
+
+        .status-badge.fake {
+            background-color: rgba(220, 38, 38, 0.15);
+            color: #991B1B;
+        }
+
+        .logo {
+            height: 38px;
+        }
+
+        .logo-icon {
+            font-size: 28px;
+            background: linear-gradient(135deg, #4F46E5 0%, #9333EA 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-right: 12px;
+        }
+
+        .card-header {
+            background: linear-gradient(90deg, rgba(79, 70, 229, 0.08) 0%, rgba(79, 70, 229, 0) 100%);
+            border-bottom: 1px solid rgba(79, 70, 229, 0.1);
+            padding: 12px 16px;
+        }
+
+        .faces-container {
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .faces-container:hover {
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Animation classes */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .slide-up {
+            animation: slideUp 0.6s ease-out;
+        }
+
+        .slide-in-right {
+            animation: slideInRight 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @keyframes floating {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .scale-in {
+            animation: scaleIn 0.4s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .ripple-bg {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ripple-bg::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle, transparent 30%, rgba(79, 70, 229, 0.05) 100%);
+            animation: ripple 5s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0.9);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(0.9);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <header class="py-3 px-6 glass-effect mb-5 shadow-md slide-up">
+            <div class="container mx-auto flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="logo flex items-center">
+                        <div class="floating">
+                            <i class="fas fa-shield-alt logo-icon"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-800 leading-tight">DeepGuard AI</h1>
+                            <p class="text-sm text-gray-600">Hệ thống phát hiện video giả mạo</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div
+                        class="flex items-center space-x-2 bg-blue-50 px-4 py-2 rounded-lg shadow-sm hover:bg-blue-100 transition-all hover:-translate-y-1">
+                        <i class="fas fa-clock text-primary"></i>
+                        <span class="text-sm text-gray-700">Thời gian xử lý: <span class="font-medium">{{
+                                time_processing
+                                }}s</span></span>
+                    </div>
+                    <div
+                        class="flex items-center space-x-2 bg-indigo-50 px-4 py-2 rounded-lg shadow-sm hover:bg-indigo-100 transition-all hover:-translate-y-1">
+                        <i class="fas fa-face-smile text-indigo-600"></i>
+                        <span class="text-sm text-gray-700">Khuôn mặt: <span class="font-medium">{{ imgs_path|length
+                                }}</span></span>
+                    </div>
+                    <div
+                        class="flex items-center space-x-2 bg-purple-50 px-4 py-2 rounded-lg shadow-sm hover:bg-purple-100 transition-all hover:-translate-y-1">
+                        <i class="fas fa-chart-pie text-purple-600"></i>
+                        <span class="text-sm text-gray-700">Kết quả phân tích</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="content-container">
+            <div class="container mx-auto px-6">
+                <div class="flex flex-col lg:flex-row gap-6">
+                    <!-- Video Player -->
+                    <div class="w-full lg:w-2/3 flex flex-col slide-up" style="animation-delay: 0.1s">
+                        <div class="video-container flex-1 ripple-bg">
+                            <div class="card-header flex justify-between items-center">
+                                <div class="flex items-center">
+                                    <i class="fas fa-film text-primary mr-2"></i>
+                                    <h3 class="font-bold text-gray-800">Kết Quả Phân Tích Video</h3>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    {% set real_count = namespace(value=0) %}
+                                    {% set warning_count = namespace(value=0) %}
+                                    {% set fake_count = namespace(value=0) %}
+
+                                    {% set threshold_low = threshold_fake[0] * 100 if threshold_fake is defined else 30
+                                    %}
+                                    {% set threshold_high = threshold_fake[1] * 100 if threshold_fake is defined else 70
+                                    %}
+
+                                    {% for prop in props_data %}
+                                    {% if prop < threshold_low %} {% set real_count.value=real_count.value + 1 %} {%
+                                        elif prop <=threshold_high %} {% set warning_count.value=warning_count.value + 1
+                                        %} {% else %} {% set fake_count.value=fake_count.value + 1 %} {% endif %} {%
+                                        endfor %} <!-- <div class="status-badge real scale-in"
+                                        style="animation-delay: 0.3s">
+                                        <i class="fas fa-check-circle"></i> Real: {{ real_count.value }}
+                                </div> -->
+                                <!-- <div class="status-badge warning scale-in" style="animation-delay: 0.4s">
+                                    <i class="fas fa-exclamation-triangle"></i> Cảnh báo: {{ warning_count.value }}
+                                </div>
+                                <div class="status-badge fake scale-in" style="animation-delay: 0.5s">
+                                    <i class="fas fa-times-circle"></i> Fake: {{ fake_count.value }}
+                                </div> -->
+                            </div>
+                        </div>
+                        <div class="relative flex-1 flex items-center justify-center bg-gray-900 p-4">
+                            <video controls class="max-h-full max-w-full rounded-lg shadow-lg">
+                                <source src="{{ url_for('static', filename=video_path) }}" type="video/mp4">
+                                Trình duyệt của bạn không hỗ trợ video.
+                            </video>
+                        </div>
+
+                        <!-- Status summary -->
+                        <div class="p-4 bg-gray-50 border-t border-gray-100">
+                            <div class="flex justify-between items-center">
+                                <h4 class="font-medium text-gray-700">Tổng quan phân tích</h4>
+                                <div class="flex space-x-1 items-center">
+                                    <span class="h-2 w-2 bg-primary rounded-full pulse-dot"></span>
+                                    <span class="text-xs text-gray-500">Đã phân tích xong</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 grid grid-cols-3 gap-3">
+                                <div class="bg-white p-3 rounded-lg shadow-sm flex flex-col items-center scale-in"
+                                    style="animation-delay: 0.6s">
+                                    <div class="text-realState mb-1">
+                                        <i class="fas fa-check-circle text-xl"></i>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="font-bold text-lg">{{ real_count.value }}</div>
+                                        <div class="text-xs text-gray-500">Khuôn mặt thật</div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white p-3 rounded-lg shadow-sm flex flex-col items-center scale-in"
+                                    style="animation-delay: 0.7s">
+                                    <div class="text-warnState mb-1">
+                                        <i class="fas fa-exclamation-triangle text-xl"></i>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="font-bold text-lg">{{ warning_count.value }}</div>
+                                        <div class="text-xs text-gray-500">Nghi vấn</div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white p-3 rounded-lg shadow-sm flex flex-col items-center scale-in"
+                                    style="animation-delay: 0.8s">
+                                    <div class="text-fakeState mb-1">
+                                        <i class="fas fa-times-circle text-xl"></i>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="font-bold text-lg">{{ fake_count.value }}</div>
+                                        <div class="text-xs text-gray-500">Khuôn mặt giả</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danh sách khuôn mặt -->
+                <div class="w-full lg:w-1/3 slide-in-right" style="animation-delay: 0.2s">
+                    <div class="faces-container glass-effect shadow-lg overflow-hidden h-full flex flex-col">
+                        <div class="card-header flex items-center justify-between">
+                            <div class="flex items-center">
+                                <i class="fas fa-users text-primary mr-2"></i>
+                                <h4 class="font-semibold text-gray-800">Khuôn Mặt Phát Hiện</h4>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <span class="flex h-2 w-2">
+                                    <span
+                                        class="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-primary opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                                </span>
+                                <span class="text-xs text-gray-600">{{ imgs_path|length }} khuôn mặt</span>
+                            </div>
+                        </div>
+
+                        <!-- Filter Controls -->
+                        <div class="p-3 border-b border-gray-100 bg-gray-50">
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="filterFaces('all')"
+                                    class="filter-btn active px-3 py-1 text-xs rounded-md bg-white border border-gray-200 hover:bg-gray-100 transition-all shadow-sm">
+                                    <i class="fas fa-layer-group mr-1 text-gray-600"></i> Tất cả
+                                </button>
+                                <button onclick="filterFaces('real')"
+                                    class="filter-btn px-3 py-1 text-xs rounded-md bg-white border border-gray-200 hover:bg-green-50 transition-all shadow-sm">
+                                    <i class="fas fa-check-circle mr-1 text-realState"></i> Real
+                                </button>
+                                <button onclick="filterFaces('warning')"
+                                    class="filter-btn px-3 py-1 text-xs rounded-md bg-white border border-gray-200 hover:bg-yellow-50 transition-all shadow-sm">
+                                    <i class="fas fa-exclamation-triangle mr-1 text-warnState"></i> CẢNH BÁO
+                                </button>
+                                <button onclick="filterFaces('fake')"
+                                    class="filter-btn px-3 py-1 text-xs rounded-md bg-white border border-gray-200 hover:bg-red-50 transition-all shadow-sm">
+                                    <i class="fas fa-times-circle mr-1 text-fakeState"></i> Fake
+                                </button>
+                            </div>
+                            <div class="mt-2 flex justify-between items-center">
+                                <div class="relative text-gray-500">
+                                    <select id="sortOrder"
+                                        class="text-xs bg-white border border-gray-200 rounded-md pl-7 pr-2 py-1 appearance-none focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-sm"
+                                        onchange="sortFaces()">
+                                        <option value="index">Thứ tự mặc định</option>
+                                        <option value="fake-high">Tỷ lệ giả mạo cao → thấp</option>
+                                        <option value="fake-low">Tỷ lệ giả mạo thấp → cao</option>
+                                    </select>
+                                    <i
+                                        class="fas fa-sort-amount-down absolute left-2 top-1/2 transform -translate-y-1/2 text-xs"></i>
+                                </div>
+                                <div class="text-xs text-gray-500 flex items-center">
+                                    <span class="faces-counter"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-3" id="facesContainer">
+                            {% set threshold_low = threshold_fake[0] * 100 if threshold_fake is defined else 30 %}
+                            {% set threshold_high = threshold_fake[1] * 100 if threshold_fake is defined else 70 %}
+
+                            {% for i in range(imgs_path|length) %}
+                            {% if props_data[i] < threshold_low %} {% set color_class="text-realState" %} {% set
+                                bg_class="bg-green-50" %} {% set icon="fa-check-circle" %} {% set text="Real" %} {% set
+                                progress_color="bg-realState" %} {% set item_class="real-item" %} {% set
+                                ring_color="ring-realState" %} {% set type="real" %} {% elif props_data[i]
+                                <=threshold_high %} {% set color_class="text-warnState" %} {% set
+                                bg_class="bg-yellow-50" %} {% set icon="fa-exclamation-triangle" %} {% set
+                                text="CẢNH BÁO" %} {% set progress_color="bg-warnState" %} {% set
+                                item_class="warning-item" %} {% set ring_color="ring-warnState" %} {% set type="warning"
+                                %} {% else %} {% set color_class="text-fakeState" %} {% set bg_class="bg-red-50" %} {%
+                                set icon="fa-times-circle" %} {% set text="Fake" %} {% set progress_color="bg-fakeState"
+                                %} {% set item_class="fake-item" %} {% set ring_color="ring-fakeState" %} {% set
+                                type="fake" %} {% endif %} <div
+                                class="image-item {{ item_class }} {{ bg_class }} p-3 rounded-lg cursor-pointer hover:shadow-md scale-in"
+                                data-index="{{ i }}" data-type="{{ type }}" data-fake-score="{{ props_data[i] }}"
+                                onclick="showEnlargedImage('{{ url_for('static', filename=imgs_path[i]) }}')">
+                                <div class="flex items-center space-x-3">
+                                    <div class="relative">
+                                        <img src="{{ url_for('static', filename=imgs_path[i]) }}" alt="Face Image"
+                                            class="w-16 h-16 rounded-lg object-cover ring-2 ring-offset-1 {{ ring_color }}">
+                                        <div
+                                            class="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center {{ bg_class }} border-2 {{ 'border-realState' if text == 'Real' else 'border-fakeState' if text == 'Fake' else 'border-warnState' }}">
+                                            <i class="fas {{ icon }} {{ color_class }} text-xs"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <span class="font-semibold text-sm {{ color_class }} flex items-center">
+                                                {{ text }}
+                                                {% if type == "fake" and props_data[i] > 90 %}
+                                                <span
+                                                    class="ml-1 bg-red-100 text-red-800 text-[10px] px-1.5 py-0.5 rounded">Cao</span>
+                                                {% endif %}
+                                            </span>
+                                            <span class="text-xs bg-gray-100 px-2 py-0.5 rounded-md text-gray-500">#{{
+                                                i+1 }}</span>
+                                        </div>
+                                        <div class="space-y-1">
+                                            <div class="text-xs text-gray-600 flex justify-between">
+                                                <span>Tỷ lệ giả mạo:</span>
+                                                <span
+                                                    class="font-medium 
+                                                    {% if props_data[i] > 90 %}text-fakeState{% elif props_data[i] > 70 %}text-warnState{% else %}text-gray-700{% endif %}">
+                                                    {{ props_data[i] }}%</span>
+                                            </div>
+                                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                                <div class="progress-bar {{ progress_color }} h-2 rounded-full"
+                                                    style="width: {{ props_data[i] }}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Empty state for when no faces are displayed after filtering -->
+                    <div id="emptyState" class="hidden flex-col items-center justify-center p-8 text-center"
+                        style="height: 300px;">
+                        <div class="text-gray-400 mb-3">
+                            <i class="fas fa-search text-3xl"></i>
+                        </div>
+                        <h5 class="text-gray-500 font-medium mb-1">Không tìm thấy khuôn mặt</h5>
+                        <p class="text-gray-400 text-sm">Không có khuôn mặt nào phù hợp với bộ lọc đã chọn.</p>
+                        <button onclick="filterFaces('all')"
+                            class="mt-3 text-xs bg-primary text-white px-3 py-1 rounded hover:bg-indigo-600 transition-colors">
+                            Xem tất cả
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    </div>
+    </div>
+
+    <!-- Overlay for enlarged image -->
+    <div class="overlay fixed inset-0 bg-black bg-opacity-90 hidden items-center justify-center z-50" id="overlay"
+        onclick="closeEnlargedImage()">
+        <div class="relative max-w-4xl mx-auto p-4 animate__animated animate__zoomIn">
+            <button onclick="closeEnlargedImage()"
+                class="absolute top-0 right-0 -mt-10 -mr-10 text-white hover:text-gray-300 transition-colors">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+            <img class="enlarged-image max-w-full max-h-[80vh] rounded-xl shadow-2xl" id="enlargedImage" src=""
+                alt="Enlarged Face Image">
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+    <script>
+        AOS.init({
+            duration: 600,
+            once: true
+        });
+
+        function showEnlargedImage(src) {
+            const overlay = document.getElementById('overlay');
+            const enlargedImage = document.getElementById('enlargedImage');
+            enlargedImage.src = src;
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeEnlargedImage() {
+            const overlay = document.getElementById('overlay');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        }
+
+        document.getElementById('enlargedImage').addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        // Add filtering and sorting functions
+        function filterFaces(type) {
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-gray-100', 'border-primary');
+                btn.classList.add('bg-white');
+            });
+            document.querySelector(`.filter-btn[onclick*="${type}"]`).classList.add('active', 'bg-gray-100', 'border-primary');
+
+            // Get all face items
+            const items = document.querySelectorAll('.image-item');
+            let visibleCount = 0;
+
+            items.forEach(item => {
+                if (type === 'all' || item.dataset.type === type) {
+                    item.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
+
+            // Toggle empty state
+            const emptyState = document.getElementById('emptyState');
+            const facesContainer = document.getElementById('facesContainer');
+
+            if (visibleCount === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                facesContainer.classList.add('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+                facesContainer.classList.remove('hidden');
+            }
+
+            // Update counter
+            updateCounter(visibleCount);
+        }
+
+        function sortFaces() {
+            const container = document.getElementById('facesContainer');
+            const sortOrder = document.getElementById('sortOrder').value;
+            const items = Array.from(container.getElementsByClassName('image-item'));
+
+            // Sort items
+            items.sort((a, b) => {
+                switch (sortOrder) {
+                    case 'fake-high':
+                        return parseFloat(b.dataset.fakeScore) - parseFloat(a.dataset.fakeScore);
+                    case 'fake-low':
+                        return parseFloat(a.dataset.fakeScore) - parseFloat(b.dataset.fakeScore);
+                    default: // index
+                        return parseInt(a.dataset.index) - parseInt(b.dataset.index);
+                }
+            });
+
+            // Reappend sorted items to container
+            items.forEach(item => {
+                container.appendChild(item);
+            });
+
+            // Reapply active filter
+            const activeFilter = document.querySelector('.filter-btn.active');
+            if (activeFilter) {
+                const filterType = activeFilter.onclick.toString().match(/filterFaces\('([^']+)'\)/)[1];
+                filterFaces(filterType);
+            }
+        }
+
+        function updateCounter(count) {
+            const totalCount = document.querySelectorAll('.image-item').length;
+            document.querySelector('.faces-counter').textContent = `Hiển thị ${count}/${totalCount} khuôn mặt`;
+        }
+
+        // Animate progress bars on load
+        window.addEventListener('load', function () {
+            const progressBars = document.querySelectorAll('.progress-bar');
+
+            // Animate progress bars
+            progressBars.forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 300);
+            });
+
+            // Initialize the counter
+            const totalCount = document.querySelectorAll('.image-item').length;
+            document.querySelector('.faces-counter').textContent = `Hiển thị ${totalCount}/${totalCount} khuôn mặt`;
+
+            // Apply animation delays
+            document.querySelectorAll('.scale-in').forEach((el, index) => {
+                el.style.animationDelay = (0.3 + index * 0.05) + 's';
+            });
+
+            // Initialize filter buttons
+            document.querySelector('.filter-btn[onclick*="all"]').classList.add('active', 'bg-gray-100', 'border-primary');
+        });
+    </script>
+</body>
+
+</html>
